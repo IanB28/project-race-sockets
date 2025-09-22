@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Juego de Carreras</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0f0; /* pasto */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      border: 5px solid black;
+      border-radius: 8px;
+      background: #555; /* pista gris */
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="400" height="600"></canvas>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    let players = {};
+
+    // sprite coche
+    const carro = new Image();
+    carro.src = "carro.png"; // 👈 asegúrate de poner tu imagen aquí
+
+    // Jugador local
+    const player = {
+      id: socket.id,
+      x: canvas.width / 2 - 25,
+      y: canvas.height - 120,
+      color: "#" + Math.floor(Math.random() * 16777215).toString(16)
+    };
+    players[socket.id] = player;
+
+    // variables para la pista
+    let lineOffset = 0;
+
+    // Dibujar la pista y jugadores
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Fondo verde (pasto)
+      ctx.fillStyle = "#0a0";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Pista gris
+      ctx.fillStyle = "#444";
+      ctx.fillRect(80, 0, 240, canvas.height);
+
+      // Líneas blancas discontinuas (simulan movimiento)
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 4;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = lineOffset;
+      ctx.beginPath();
+      ctx.moveTo(canvas.width / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
+      ctx.stroke();
+
+      // Dibujar jugadores
+      for (let id in players) {
+        const p = players[id];
+        if (id === socket.id) {
+          ctx.drawImage(carro, p.x, p.y, 50, 100);
+        } else {
+          ctx.fillStyle = p.color;
+          ctx.fillRect(p.x, p.y, 50, 100);
+        }
+      }
+
+      // animación de pista
+      lineOffset += 5;
+      if (lineOffset > 40) lineOffset = 0;
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    // Movimiento local + broadcast
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" && player.x < 270) player.x += 10;
+      if (e.key === "ArrowLeft" && player.x > 80) player.x -= 10;
+      if (e.key === "ArrowUp" && player.y > 0) player.y -= 10;
+      if (e.key === "ArrowDown" && player.y < canvas.height - 100) player.y += 10;
+
+      socket.emit("mover", player);
+    });
+
+    // Recibir actualizaciones
+    socket.on("actualizar", (data) => {
+      players[data.id] = data;
+    });
+
+    // Quitar jugador desconectado
+    socket.on("desconectado", (id) => {
+      delete players[id];
+    });
+  </script>
+</body>
+</html>
