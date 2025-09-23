@@ -1,19 +1,14 @@
 {
   "name": "project-race-sockets",
-  "version": "1.0.0",
-  "description": "Proyecto de Sistemas distribuidos",
-  "main": "index.js",
-  
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js"
-  }
-,
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^7.1.7"
   }
 }
