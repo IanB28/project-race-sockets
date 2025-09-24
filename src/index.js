@@ -14,6 +14,10 @@ class RaceScene extends Phaser.Scene {
   preload() {
     // Pistas
     this.load.image("track", "/src/track.png");
+    this.load.image("track2", "/src/track2.png");
+
+    //Imagen de fondo
+    this.load.image("background", "/src/background.png");
 
     // Carros
     this.load.image("car1", "/src/car.png");
@@ -25,6 +29,12 @@ class RaceScene extends Phaser.Scene {
 
 
   create() {
+
+    //Imagen de fondo
+    const bg = this.add.image(0,0,"background").setOrigin(0,0);
+    bg.setDisplaySize(this.sys.game.config.width, this.sys.game.config.height);
+    bg.setDepth(-1);
+
     // Inicializar arrays para todos los carros y pistas
     this.allCars = [];
     this.allTracks = [];
@@ -50,6 +60,7 @@ class RaceScene extends Phaser.Scene {
    * carKey: clave de la imagen del carro (ej: "car1")
    */
   createTrackAndCar(trackY, carKey) {
+    //const trackImage = this.textures.get("track").getSourceImage();
     const trackImage = this.textures.get("track").getSourceImage();
     const tileWidth = trackImage.width;
 
