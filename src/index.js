@@ -1,117 +1,127 @@
 import Phaser from "phaser";
+import socket from "./js/socket.js";
 
-// Configuración de la pista y carril
+// Configuraci贸n de la pista y carril
 const CAR_SCALE = 0.25; // factor de escala
 
-
-const TRACK_HEIGHT = 150;  // Altura de la pista
+const TRACK_HEIGHT = 150; // Altura de la pista
 
 class RaceScene extends Phaser.Scene {
   constructor() {
     super("RaceScene");
+    this.players = {};
   }
 
   preload() {
     // Pistas
-    this.load.image("track", "/src/track.png");
-    this.load.image("track2", "/src/track2.png");
+    this.load.image("track", "/img/track.png");
+   // this.load.image("track2", "/img/track2.png");
 
     //Imagen de fondo
-    this.load.image("background", "/src/background.png");
+    this.load.image("background", "/img/background.png");
 
     // Carros
-    this.load.image("car1", "/src/car.png");
-    this.load.image("car2", "/src/car2.png");
-    this.load.image("car3", "/src/car3.png");
-    this.load.image("car4", "/src/car4.png");
-    this.load.image("car5", "/src/car5.png");
+    this.load.image("car1", "/img/car.png");
+    this.load.image("car2", "/img/car2.png");
+    this.load.image("car3", "/img/car3.png");
+    this.load.image("car4", "/img/car4.png");
+    this.load.image("car5", "/img/car5.png");
   }
 
-
   create() {
-
-    //Imagen de fondo
-    const bg = this.add.image(0,0,"background").setOrigin(0,0);
+    const bg = this.add.image(0, 0, "background").setOrigin(0, 0);
     bg.setDisplaySize(this.sys.game.config.width, this.sys.game.config.height);
     bg.setDepth(-1);
 
-    // Inicializar arrays para todos los carros y pistas
+    this.players = {};
     this.allCars = [];
     this.allTracks = [];
-
-    // Crear la primera pista y carro
-    this.createTrackAndCar(300,"car1");   // TRACK_Y = 100
-    // Crear una segunda pista y carro
-    this.createTrackAndCar(450,"car2");   // TRACK_Y = 350
-    this.createTrackAndCar(600,"car3");
-    this.createTrackAndCar(750,"car4");
-    this.createTrackAndCar(900,"car5");
-
-    // Controles
     this.cursors = this.input.keyboard.createCursorKeys();
+
+    // 馃搶 Cuando llega info de un nuevo jugador
+    socket.on("newPlayer", (playerInfo) => {
+      if (!this.players[playerInfo.id]) {
+        const car = this.createTrackAndCar(playerInfo.trackY, playerInfo.carKey);
+        car.x = playerInfo.x;
+        car.y = playerInfo.y;
+        this.players[playerInfo.id] = car;
+      }
+    });
+
+
+    // 馃搶 Actualizar posiciones
+    socket.on("updatePlayer", (data) => {
+      const car = this.players[data.id];
+      if (car) {
+        car.x = data.x;
+        car.y = data.y;
+      }
+    });
+
+    // 馃搶 Eliminar jugador
+    socket.on("removePlayer", (playerId) => {
+      if (this.players[playerId]) {
+        this.players[playerId].destroy();
+        delete this.players[playerId];
+      }
+    });
+
+    // Avisar al servidor que este cliente se une
+    socket.emit("joinGame");
   }
 
+
   /**
-   * Función para crear pista y carro
-   * @param {number} trackY - Posición vertical de la pista
+   * Funci贸n para crear pista y carro
+   * @param {number} trackY - Posici贸n vertical de la pista
    */
   /**
-   * trackY: posición vertical
+   * trackY: posici贸n vertical
    * carKey: clave de la imagen del carro (ej: "car1")
    */
   createTrackAndCar(trackY, carKey) {
-    //const trackImage = this.textures.get("track").getSourceImage();
     const trackImage = this.textures.get("track").getSourceImage();
     const tileWidth = trackImage.width;
 
-    // Crear pista
     const repetitions = Math.ceil(this.sys.game.config.width / tileWidth);
     const newTrackTiles = [];
     for (let i = 0; i < repetitions; i++) {
       const tile = this.add.image(
         i * tileWidth + tileWidth / 2,
         trackY,
-        "track"
+        "track",
       );
       tile.setScale(1, TRACK_HEIGHT / trackImage.height);
       newTrackTiles.push(tile);
     }
     this.allTracks.push(newTrackTiles);
 
-    // Crear carro con la imagen indicada
-    const newCar = this.physics.add.sprite(
-      tileWidth / 2,
-      trackY,
-      carKey
-    );
-    //newCar.setScale(CAR_SCALE);
+    const newCar = this.physics.add.sprite(tileWidth / 2, trackY, carKey);
     newCar.displayWidth = 170;
     newCar.displayHeight = 140;
     newCar.setCollideWorldBounds(true);
     this.allCars.push(newCar);
+
+    return newCar; // 馃憟 para guardar en this.players
   }
 
 
   update() {
-    const tileWidth = this.textures.get("track").getSourceImage().width;
+    const myCar = this.players[socket.id];
+    if (!myCar) return;
 
-    // Mover todos los carros horizontalmente con controles
+    if (this.cursors.left.isDown) {
+      myCar.x -= 5;
+    } else if (this.cursors.right.isDown) {
+      myCar.x += 5;
+    }
 
-
-
-      const totalWidth = tileWidth * this.allTracks[0].length; // ancho de la pista correspondiente
-      const playerCar = this.allCars[0];
-      if (this.cursors.left.isDown) {
-        playerCar.x = Math.max(playerCar.x - 5, tileWidth / 2);
-      }
-      if (this.cursors.right.isDown) {
-        playerCar.x = Math.min(playerCar.x + 5, totalWidth - tileWidth / 2);
-      }
-      playerCar.y = playerCar.y; // mantener vertical
+    socket.emit("playerMove", { x: myCar.x, y: myCar.y });
   }
+
 }
 
-// Configuración del juego
+// Configuraci贸n del juego
 const config = {
   type: Phaser.AUTO,
   width: window.innerWidth,
@@ -121,8 +131,8 @@ const config = {
   scene: [RaceScene],
   scale: {
     mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  }
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
 };
 
 // Inicializar el juego
