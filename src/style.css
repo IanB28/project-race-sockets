@@ -1,96 +1,168 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
+html, body {
   margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #232526;
+  width: 100vw;
+  height: 100vh;
+}
+canvas {
+  display: block;
+  position: absolute;
+  top: 0; left: 0;
+}
+input, button {
+  font-family: Arial, sans-serif;
+  outline: none;
+}
+    #car-modal {
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: rgba(30,30,30,0.92);
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s;
 }
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+.car-modal-content {
+  background: #22252a;
+  border-radius: 22px;
+  padding: 38px 38px 28px 38px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.32);
   text-align: center;
+  min-width: 340px;
+  max-width: 96vw;
 }
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+.car-modal-content h2 {
+  color: #FFD700;
+  margin-bottom: 24px;
+  font-family: Arial Black, Arial, sans-serif;
+  letter-spacing: 1px;
+  font-size: 2rem;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+.car-modal-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 32px;
+  margin-bottom: 28px;
+  justify-content: center;
+  align-items: stretch;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  max-width: 90vw;
 }
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #f7df1eaa);
+.car-modal-grid::-webkit-scrollbar {
+  height: 10px;
 }
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
-
-button {
+.car-modal-grid::-webkit-scrollbar-thumb {
+  background: #353b48;
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+}
+.car-card {
+  background: linear-gradient(135deg, #353b48 70%, #232526 100%);
+  border-radius: 18px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+  border: 3px solid transparent;
+  transition: box-shadow 0.2s, border 0.2s, background 0.2s, transform 0.18s;
   cursor: pointer;
-  transition: border-color 0.25s;
+  width: 210px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
 }
-button:hover {
-  border-color: #646cff;
+.car-card-glow {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 18px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  box-shadow: 0 0 32px 8px #FFD70055;
 }
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.car-card.selected .car-card-glow,
+.car-card:hover .car-card-glow {
+  opacity: 1;
 }
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.car-card.selected,
+.car-card:hover {
+  border: 3px solid #FFD700;
+  background: linear-gradient(135deg, #2d3436 70%, #FFD70022 100%);
+  box-shadow: 0 8px 32px rgba(255,215,0,0.10), 0 4px 18px rgba(0,0,0,0.18);
+  transform: scale(1.04);
+}
+.car-card-imgbox {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 90px;
+  margin: 12px 0 0 0;
+}
+.car-card-imgbox img {
+  width: 140px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 12px #000a);
+  background: #232526;
+  border-radius: 10px;
+  transition: filter 0.2s;
+}
+.car-card.selected .car-card-imgbox img,
+.car-card:hover .car-card-imgbox img {
+  filter: drop-shadow(0 2px 18px #FFD700cc);
+}
+.car-card-info {
+  width: 100%;
+  text-align: center;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+.car-card-title {
+  color: #FFD700;
+  font-weight: bold;
+  font-size: 1.1rem;
+  font-family: Arial Black, Arial, sans-serif;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+}
+.car-card-status {
+  color: #fff;
+  font-size: 15px;
+  font-family: Arial, sans-serif;
+  background: #00b894;
+  border-radius: 8px;
+  padding: 3px 16px;
+  margin-top: 4px;
+  display: inline-block;
+  transition: background 0.2s, color 0.2s;
+}
+.car-card.selected .car-card-status,
+.car-card:hover .car-card-status {
+  background: #FFD700;
+  color: #232526;
+}
+#close-car-modal {
+  margin-top: 8px;
+  padding: 10px 36px;
+  border-radius: 10px;
+  border: none;
+  background: #00b894;
+  color: #fff;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+}
+#close-car-modal:hover {
+  background: #00cec9;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
