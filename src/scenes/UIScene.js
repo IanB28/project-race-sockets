@@ -14,7 +14,3 @@ export default class UIScene extends Phaser.Scene {
     });
   }
 }
-
-//console.log(socket);
-
-///MOSTRAR PUNTAJES Y COMBOS DE TECLASSSSSSSS 
