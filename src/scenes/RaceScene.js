@@ -7,6 +7,10 @@ export default class RaceScene extends Phaser.Scene {
     this.players = {};   // Carros
     this.tracks = {};    // Pistas
     this.combos = {};    // Combo actual de cada jugador
+    //VALIDACION DE COMBOS
+    this.comboCount = 0;
+    this.comboGoal = 3;
+    this.gameEnded = false;
   }
 
   
@@ -26,6 +30,15 @@ export default class RaceScene extends Phaser.Scene {
     socket.on("newPlayer", (playerInfo) => this.addPlayer(playerInfo));
     socket.on("updatePlayer", (data) => this.updatePlayer(data));
     socket.on("removePlayer", (playerId) => this.removePlayer(playerId));
+    socket.on("youWon", () => {
+      this.showWinnerOverlay("FELICIDADEEES, HAS GANADO LA CARRERA!", true);
+      this.gameEnded = true;
+    });
+
+    socket.on("someOneWon", (data) => {
+      this.showWinnerOverlay(`Has perdido. \n Mejor Suerte para la próxima vez`, false);
+      this.gameEnded = true;
+    });
 
     // Unirse al juego
     socket.emit("joinGame");
@@ -113,25 +126,6 @@ car.displayHeight = car.displayWidth * 0.8;          // mantener proporción
     return { sequence: combo, index: 0 };
   }
 
-  checkKeyPress(key) {
-    const combo = this.combos[socket.id];
-    if (!combo) return;
-
-    if (key === combo.sequence[combo.index]) {
-      combo.index++;
-      if (combo.index >= combo.sequence.length) {
-        this.advanceCar();
-        this.combos[socket.id] = this.generateCombo();
-        this.updateComboText();
-      }
-    } else {
-      // Error: retroceder carro
-      const myCar = this.players[socket.id];
-      if (myCar) myCar.x -= 30;
-      combo.index = 0;
-      this.updateComboText();
-    }
-  }
 
   updateComboText() {
     const combo = this.combos[socket.id];
@@ -157,7 +151,112 @@ car.displayHeight = car.displayWidth * 0.8;          // mantener proporción
     socket.emit("playerMove", { x: myCar.x, y: myCar.y });
   }
 
-  update() {
+checkKeyPress(key) {
+    const combo = this.combos[socket.id];
+    if (!combo) return;
+    if(this.gameEnded) return;
+
+    if (key === combo.sequence[combo.index]) {
+      combo.index++;
+      if (combo.index >= combo.sequence.length) {
+        this.advanceCar();
+        this.combos[socket.id] = this.generateCombo();
+        this.updateComboText();
+
+    console.log(this.comboCount);
+        this.comboCount++;
+        if (this.comboCount >= this.comboGoal) {
+          console.log("Emitiendo señal de winner");
+          socket.emit("winner");
+        }
+      }
+    } else {
+      // Error: retroceder carro
+      const myCar = this.players[socket.id];
+      if (myCar) myCar.x -= 30;
+      combo.index = 0;
+      if(!(this.comboCount <= 0)){
+      this.comboCount--;
+      }
+      this.updateComboText();
+    }
+  }
+
+
+showWinnerOverlay(message, isWinner = false){
+    console.log("🎨 ENTRANDO A showWinnerOverlay:", message, "isWinner:", isWinner);
+    
+    const bgColor = isWinner ? 0x27ae60 : 0xe74c3c; // Verde y rojo xd
+    const borderColor = isWinner ? 0xffd700 : 0x95a5a6; //Dorado y gris
+
+    console.log("🎨 Colores calculados - bg:", bgColor, "border:", borderColor);
+
+    const overlay = this.add.rectangle(
+      this.sys.game.config.width / 2,
+      this.sys.game.config.height / 2,
+      this.sys.game.config.width,
+      this.sys.game.config.height,
+      0x000000,
+      0.7
+    );
+    overlay.setDepth(100);
+    console.log("🎨 Overlay creado");
+
+    const container = this.add.container(
+      this.sys.game.config.width / 2,
+      this.sys.game.config.height / 2
+    );
+    container.setDepth(101);
+    console.log("🎨 Container creado");
+
+    // CAMBIO: Usar Graphics en lugar de Rectangle con setStroke
+    const messageBg = this.add.graphics();
+    messageBg.fillStyle(bgColor);
+    messageBg.fillRect(-300, -100, 600, 200); // x, y, width, height (centrado)
+    messageBg.lineStyle(5, borderColor); // grosor, color
+    messageBg.strokeRect(-300, -100, 600, 200);
+    console.log("🎨 MessageBg creado con Graphics");
+
+    const winnerText = this.add.text(0, 0, message, {
+      fontSize: "28px",
+      color: "#ffffff",
+      fontFamily: "Arial",
+      align: "center"
+    });
+    winnerText.setOrigin(0.5);
+    console.log("🎨 WinnerText creado");
+
+    container.add([messageBg, winnerText]);
+    console.log("🎨 Elementos agregados al container");
+
+    //Animaciones de acuerdo al resultado
+    container.setScale(0);
+    console.log("🎨 Iniciando animación...");
+    this.tweens.add({
+      targets: container,
+      scaleX: 1,
+      scaleY: 1,
+      duration: isWinner ? 800 : 500,
+      ease: isWinner ? "Bounce.easeOut" : "Power2.easeOut",
+      onComplete: () => {
+        console.log("🎨 Animación completada!");
+      }
+    });
+
+    this.time.delayedCall(4000, () => {
+      console.log("🎨 Iniciando desvanecimiento...");
+      this.tweens.add({
+        targets: [overlay, container],
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          console.log("🎨 Elementos destruidos");
+          overlay.destroy();
+          container.destroy();
+        }
+      });
+    });
+}   update() {
     // No mover libremente el carro
   }
 }
