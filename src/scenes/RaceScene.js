@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import socket from "../socket/connection.js";
 import { createCar } from "./CarFactory.js";
 
-const TRACK_HEIGHT = 50; // Altura de cada carril
+const TRACK_HEIGHT = 100; // Altura de cada carril
 const SKY_HEIGHT = 300; // Altura del cielo
 const MAX_TRACKS = 12; // Número máximo de carriles
 
@@ -208,33 +208,37 @@ socket.emit("joinGame", { playerName, playerCar });
 
     this.tracks[playerInfo.id] = track;
 
-    // Elegir diseño de coche (0, 1, 2)
-    const design = playerInfo.design !== undefined
-      ? playerInfo.design
-      : Phaser.Math.Between(0, 2);
-
-    // Color aleatorio o dado por el servidor
-    const color = playerInfo.color || Phaser.Display.Color.RandomRGB().color;
-
     // Ajustar la posición vertical del coche al centro del carril
     const carY = trackY; // El coche se posiciona en el centro del carril
 
-    // Crear coche con diseño usando CarFactory
-    const car = createCar(this, playerInfo.x, carY, color, design);
+    // Crear contenedor para el carro, el nombre y el fondo del nombre
+    const playerContainer = this.add.container(playerInfo.x, carY);
 
-    this.players[playerInfo.id] = car;
+    // Crear coche usando la imagen cargada en PreloadScene
+    const car = this.add.image(0, 0, playerInfo.carKey)
+      .setScale(0.18)
+      .setDepth(2);
 
-    // Mostrar el nombre encima del coche
-    const nameText = this.add.text(car.x, car.y - 80, playerInfo.playerName || "Jugador", {
+    // Fondo del nombre (rectángulo detrás del texto)
+    const nameBg = this.add.rectangle(0, -80, 120, 30, 0x000000, 0.6); // Fondo negro translúcido
+    nameBg.setStrokeStyle(2, 0xffffff); // Borde blanco
+
+    // Texto del nombre encima del coche
+    const nameText = this.add.text(0, -80, playerInfo.playerName || "Jugador", {
       fontSize: "20px",
       color: "#FFD700",
       fontFamily: "Arial Black",
       align: "center",
-      shadow: { offsetX: 0, offsetY: 2, color: "#000", blur: 8, fill: true },
     }).setOrigin(0.5);
 
-    // Guarda el texto para actualizar su posición si el coche se mueve
-    car.nameText = nameText;
+    // Ajustar el tamaño del fondo según el texto
+    nameBg.width = nameText.width + 20;
+
+    // Agregar carro, fondo y nombre al contenedor
+    playerContainer.add([car, nameBg, nameText]);
+
+    // Guardar el contenedor como el jugador
+    this.players[playerInfo.id] = playerContainer;
 
     // Generar combo inicial
     this.combos[playerInfo.id] = this.generateCombo();
@@ -242,14 +246,14 @@ socket.emit("joinGame", { playerName, playerCar });
   }
 
   updatePlayer(data) {
-    const car = this.players[data.id];
-    if (car) {
-      car.x = data.x;
-      car.y = data.y;
-      if (car.nameText) {
-        car.nameText.x = car.x;
-        car.nameText.y = car.y - 80;
-      }
+    const playerContainer = this.players[data.id];
+    if (playerContainer) {
+      // Actualiza solo la posición horizontal (x)
+      playerContainer.x = data.x;
+
+      // Mantén la posición vertical fija en el carril asignado
+      const trackY = this.tracks[data.id]?.y || SKY_HEIGHT + (Object.keys(this.tracks).length + 1) * TRACK_HEIGHT - TRACK_HEIGHT / 2;
+      playerContainer.y = trackY;
     }
   }
 
