@@ -11,7 +11,7 @@ export default class RaceScene extends Phaser.Scene {
     super("RaceScene");
     this.players = {};   // Carros
     this.tracks = {};    // Pistas
-    this.combos = {};    // Combo actual de cada jugador
+    this.combos = {};    // Combo actual por cada jugador
     //VALIDACION DE COMBOS
     this.comboCount = 0;
     this.comboGoal = 3;
