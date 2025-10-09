@@ -14,7 +14,7 @@ export default class RaceScene extends Phaser.Scene {
     this.combos = {};    // Combo actual de cada jugador
     //VALIDACION DE COMBOS
     this.comboCount = 0;
-    this.comboGoal = 15;
+    this.comboGoal = 17;
     this.gameEnded = false;
   }
 
