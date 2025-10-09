@@ -3,8 +3,8 @@ import socket from "../socket/connection.js";
 import { createCar } from "./CarFactory.js";
 
 const TRACK_HEIGHT = 100; // Altura de cada carril
-const SKY_HEIGHT = 300; // Altura del cielo
-const MAX_TRACKS = 12; // Número máximo de carriles
+const SKY_HEIGHT = 350; // Altura del cielo
+const MAX_TRACKS = 6; // Número máximo de carriles
 
 export default class RaceScene extends Phaser.Scene {
   constructor() {
@@ -14,11 +14,11 @@ export default class RaceScene extends Phaser.Scene {
     this.combos = {};    // Combo actual de cada jugador
     //VALIDACION DE COMBOS
     this.comboCount = 0;
-    this.comboGoal = 3;
+    this.comboGoal = 15;
     this.gameEnded = false;
   }
 
-  create() {
+  create() {  
 
     const roadWidth = this.sys.game.config.width;
     const roadHeight = this.sys.game.config.height;
