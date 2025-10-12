@@ -133,7 +133,7 @@ export default class RaceScene extends Phaser.Scene {
       this.finishLineX,                           // Lo posiciona en la coordenada X de la meta.
       roadYStart + finishLineHeight / 2           // Centra el contenedor respecto a la carretera.
     );
-    finishContainer.setDepth(5);                  // Asegura que la meta quede por encima de otros gráficos.
+    finishContainer.setDepth(5);                  // Meta por debajo
 
     // postes
     const postHeight = finishLineHeight + 150;    // Da un poco más de altura a los postes para que sobresalgan.
@@ -300,6 +300,7 @@ socket.emit("joinGame", { playerName, playerCar });
 
     // Crear contenedor para el carro, el nombre y el fondo del nombre
     const playerContainer = this.add.container(playerInfo.x, carY);
+    playerContainer.setDepth(10);                 // Carros por encima de la meta
 
     // Crear coche usando la imagen cargada en PreloadScene
     const car = this.add.image(0, 0, playerInfo.carKey)
