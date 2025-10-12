@@ -4,7 +4,7 @@ import { createCar } from "./CarFactory.js";
 
 const TRACK_HEIGHT = 100; // Altura de cada carril
 const SKY_HEIGHT = 350; // Altura del cielo
-const MAX_TRACKS = 6; // Número máximo de carriles
+const MAX_TRACKS = 5; // Número máximo de carriles
 
 export default class RaceScene extends Phaser.Scene {
   constructor() {
@@ -12,10 +12,10 @@ export default class RaceScene extends Phaser.Scene {
     this.players = {};   // Carros
     this.tracks = {};    // Pistas
     this.combos = {};    // Combo actual de cada jugador
-    //VALIDACION DE COMBOS
     this.comboCount = 0;
     this.comboGoal = 17;
     this.gameEnded = false;
+    this.raceStarted = false; // Nueva bandera para controlar el inicio de la carrera
   }
 
   create() {  
@@ -37,7 +37,7 @@ export default class RaceScene extends Phaser.Scene {
     const moonY = 130; // Posición vertical de la luna
     this.add.circle(moonX, moonY, 80, 0xfafad2); // Luna amarilla clara
 
-    // --- Estrellas ---
+    // --- Estrellas ---  
     for (let i = 0; i < 50; i++) {
       const starX = Phaser.Math.Between(20, roadWidth - 20);
       const starY = Phaser.Math.Between(20, SKY_HEIGHT - 20);
@@ -139,10 +139,24 @@ export default class RaceScene extends Phaser.Scene {
     // --- Texto combo del jugador local ---
     this.comboText = this.add.text(20, 20, "", { fontSize: "28px", color: "#ffffff" });
 
+    // Contador de jugadores conectados
+    this.connectedPlayers = 0;
+
     // --- Eventos Socket ---
-    socket.on("newPlayer", (playerInfo) => this.addPlayer(playerInfo));
+    socket.on("newPlayer", (playerInfo) => {
+      this.addPlayer(playerInfo);
+      this.connectedPlayers++;
+
+      // Si hay 5 jugadores conectados, inicia la animación del semáforo
+      if (this.connectedPlayers === 5) {
+        this.startTrafficLightAnimation();
+      }
+    });
     socket.on("updatePlayer", (data) => this.updatePlayer(data));
-    socket.on("removePlayer", (playerId) => this.removePlayer(playerId));
+    socket.on("removePlayer", (playerId) => {
+      this.removePlayer(playerId);
+      this.connectedPlayers--;
+    });
     socket.on("youWon", () => {
       this.showWinnerOverlay("FELICIDADEEES, HAS GANADO LA CARRERA!", true);
       this.gameEnded = true;
@@ -219,20 +233,28 @@ socket.emit("joinGame", { playerName, playerCar });
       .setScale(0.18)
       .setDepth(2);
 
-    // Fondo del nombre (rectángulo detrás del texto)
-    const nameBg = this.add.rectangle(0, -80, 120, 30, 0x000000, 0.6); // Fondo negro translúcido
-    nameBg.setStrokeStyle(2, 0xffffff); // Borde blanco
-
     // Texto del nombre encima del coche
     const nameText = this.add.text(0, -80, playerInfo.playerName || "Jugador", {
-      fontSize: "20px",
+      fontSize: "22px",
       color: "#FFD700",
-      fontFamily: "Arial Black",
+      fontFamily: "Orbitron, Arial Black",
       align: "center",
     }).setOrigin(0.5);
 
-    // Ajustar el tamaño del fondo según el texto
-    nameBg.width = nameText.width + 20;
+    // Fondo del nombre (rectángulo con bordes redondeados y degradado)
+    const nameBg = this.add.graphics();
+    nameBg.fillGradientStyle(0x333333, 0x555555, 0x333333, 0x555555, 0.8); // Fondo degradado
+    nameBg.fillRoundedRect(-nameText.width / 2 - 15, -90, nameText.width + 30, 40, 10); // x, y, width, height, radius
+    nameBg.lineStyle(3, 0xffffff, 1); // Borde blanco
+    nameBg.strokeRoundedRect(-nameText.width / 2 - 15, -90, nameText.width + 30, 40, 10);
+
+    // Agregar animación de entrada para el contenedor del nombre
+    this.tweens.add({
+      targets: [nameBg, nameText],
+      alpha: { from: 0, to: 1 },
+      duration: 500,
+      ease: "Power2",
+    });
 
     // Agregar carro, fondo y nombre al contenedor
     playerContainer.add([car, nameBg, nameText]);
@@ -282,10 +304,34 @@ socket.emit("joinGame", { playerName, playerCar });
 
   updateComboText() {
     const combo = this.combos[socket.id];
-    if (combo) {
-      const display = combo.sequence.map((k, i) => (i < combo.index ? "✓" : k)).join(" ");
-      this.comboText.setText(`Combo: ${display}`);
+    if (!combo) return;
+
+    // Elimina los textos anteriores si existen
+    if (this.comboTextGroup) {
+      this.comboTextGroup.forEach((text) => text.destroy());
     }
+
+    // Crea un grupo para los textos del combo
+    this.comboTextGroup = [];
+
+    // Posición inicial para los textos
+    let startX = 20;
+    let startY = 20;
+
+    combo.sequence.forEach((key, index) => {
+      const color = index < combo.index ? "#00ff00" : "#ffffff"; // Verde si ya se presionó, blanco si no
+      const text = this.add.text(startX, startY, key, {
+        fontSize: "28px",
+        fontFamily: "Arial Black",
+        color: color,
+      });
+
+      // Ajustar posición horizontal para el siguiente texto
+      startX += text.width + 10;
+
+      // Agregar el texto al grupo
+      this.comboTextGroup.push(text);
+    });
   }
 
   advanceCar() {
@@ -309,35 +355,39 @@ socket.emit("joinGame", { playerName, playerCar });
   });
 }
 checkKeyPress(key) {
-    const combo = this.combos[socket.id];
-    if (!combo) return;
-    if(this.gameEnded) return;
+  if (!this.raceStarted || this.gameEnded) return; // No permitir movimiento si la carrera no ha comenzado
 
-    if (key === combo.sequence[combo.index]) {
-      combo.index++;
-      if (combo.index >= combo.sequence.length) {
-        this.advanceCar();
-        this.combos[socket.id] = this.generateCombo();
-        this.updateComboText();
+  const combo = this.combos[socket.id];
+  if (!combo) return;
 
-    console.log(this.comboCount);
-        this.comboCount++;
-        if (this.comboCount >= this.comboGoal) {
-          console.log("Emitiendo señal de winner");
-          socket.emit("winner");
-        }
+  if (key === combo.sequence[combo.index]) {
+    combo.index++;
+
+    if (combo.index >= combo.sequence.length) {
+      this.advanceCar();
+      this.combos[socket.id] = this.generateCombo();
+      this.comboCount++;
+      if (this.comboCount >= this.comboGoal) {
+        socket.emit("winner");
       }
-    } else {
-      // Error: retroceder carro
-      const myCar = this.players[socket.id];
-      if (myCar) myCar.x -= 30;
-      combo.index = 0;
-      if(!(this.comboCount <= 0)){
+    }
+  } else {
+    // Penalización por tecla incorrecta
+    const myCar = this.players[socket.id];
+    if (myCar) {
+      // Limitar el retroceso para que no salga de la pantalla
+      myCar.x = Phaser.Math.Clamp(myCar.x - 30, 0, this.sys.game.config.width);
+    }
+    combo.index = 0;
+
+    if (this.comboCount > 0) {
       this.comboCount--;
-      }
-      this.updateComboText();
     }
   }
+
+  // Actualiza el combo visual
+  this.updateComboText();
+}
 
 
 showWinnerOverlay(message, isWinner = false){
@@ -415,5 +465,60 @@ showWinnerOverlay(message, isWinner = false){
     });
 }   update() {
     // No mover libremente el carro
+  }
+
+  // Método para la animación del semáforo
+  startTrafficLightAnimation() {
+    const width = this.scale.width;
+    const height = this.scale.height;
+
+    // Fondo oscuro para el semáforo
+    const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
+    overlay.setDepth(100);
+
+    // Semáforo grande
+    const trafficLight = this.add.container(width / 2, height / 2).setDepth(101);
+
+    // Luces del semáforo
+    const redLight = this.add.circle(0, -100, 50, 0xff0000).setAlpha(0);
+    const yellowLight = this.add.circle(0, 0, 50, 0xffff00).setAlpha(0);
+    const greenLight = this.add.circle(0, 100, 50, 0x00ff00).setAlpha(0);
+
+    trafficLight.add([redLight, yellowLight, greenLight]);
+
+    // Animación de las luces
+    this.tweens.add({
+      targets: redLight,
+      alpha: 1,
+      duration: 1000,
+      onComplete: () => {
+        this.tweens.add({
+          targets: yellowLight,
+          alpha: 1,
+          duration: 1000,
+          onComplete: () => {
+            this.tweens.add({
+              targets: greenLight,
+              alpha: 1,
+              duration: 1000,
+              onComplete: () => {
+                // Desvanecer el semáforo y comenzar la carrera
+                this.tweens.add({
+                  targets: [overlay, trafficLight],
+                  alpha: 0,
+                  duration: 500,
+                  onComplete: () => {
+                    overlay.destroy();
+                    trafficLight.destroy();
+                    console.log("¡La carrera ha comenzado!");
+                    this.raceStarted = true; // Activar la bandera para permitir movimiento
+                  },
+                });
+              },
+            });
+          },
+        });
+      },
+    });
   }
 }
