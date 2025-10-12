@@ -22,7 +22,7 @@ export default class RaceScene extends Phaser.Scene {
 
     const roadWidth = this.sys.game.config.width;
     const roadHeight = this.sys.game.config.height;
-
+//--CREACION DE LA PISTA Y FONDO-- 
     // --- Cielo nocturno ---
     this.add.rectangle(
       roadWidth / 2,
@@ -50,28 +50,43 @@ export default class RaceScene extends Phaser.Scene {
     const windowColor = 0xffffcc; // Amarillo claro para las ventanas
     const graphics = this.add.graphics();
 
-    for (let i = 0; i < roadWidth; i += 100) {
-      const buildingX = i + 50; // Posición horizontal del edificio
-      const buildingY = SKY_HEIGHT - 10; // Posición vertical base del edificio
-      const buildingWidth = Phaser.Math.Between(80, 120); // Ancho aleatorio del edificio
-      const buildingHeight = Phaser.Math.Between(100, 250); // Altura aleatoria del edificio
+    const minWidth = 80;
+    const maxWidth = 120;
+    const gapBetweenBuildings = 2.5;
+    let nextBuildingX = 20;
+
+    while (nextBuildingX < roadWidth - minWidth) {
+      const buildingWidth = Phaser.Math.Between(minWidth, maxWidth);
+      const usableWidth = Math.min(buildingWidth, roadWidth - nextBuildingX - gapBetweenBuildings);
+      if (usableWidth < minWidth) break;
+
+      const buildingHeight = Phaser.Math.Between(100, 250);
       const buildingColor = buildingColors[Phaser.Math.Between(0, buildingColors.length - 1)];
+      const buildingBottomY = SKY_HEIGHT - 10;
 
-      // Dibujar edificio
       graphics.fillStyle(buildingColor, 1);
-      graphics.fillRect(buildingX, buildingY - buildingHeight, buildingWidth, buildingHeight);
+      graphics.fillRect(nextBuildingX, buildingBottomY - buildingHeight, usableWidth, buildingHeight);
 
-      // Dibujar ventanas
       const windowWidth = 15;
       const windowHeight = 20;
       const windowPadding = 10;
 
-      for (let x = buildingX + windowPadding; x < buildingX + buildingWidth - windowPadding; x += windowWidth + windowPadding) {
-        for (let y = buildingY - buildingHeight + windowPadding; y < buildingY - windowPadding; y += windowHeight + windowPadding) {
+      const usableCols = Math.floor((usableWidth - windowPadding) / (windowWidth + windowPadding));
+      const usableRows = Math.floor((buildingHeight - windowPadding) / (windowHeight + windowPadding));
+
+      const horizontalOffset = (usableWidth - (usableCols * windowWidth + (usableCols - 1) * windowPadding)) / 2;
+      const verticalOffset = (buildingHeight - (usableRows * windowHeight + (usableRows - 1) * windowPadding)) / 2;
+
+      for (let col = 0; col < usableCols; col++) {
+        for (let row = 0; row < usableRows; row++) {
+          const x = nextBuildingX + horizontalOffset + col * (windowWidth + windowPadding);
+          const y = (buildingBottomY - buildingHeight) + verticalOffset + row * (windowHeight + windowPadding);
           graphics.fillStyle(windowColor, 1);
           graphics.fillRect(x, y, windowWidth, windowHeight);
         }
       }
+
+      nextBuildingX += usableWidth + gapBetweenBuildings;
     }
 
     // --- Semáforo ---
@@ -100,17 +115,31 @@ export default class RaceScene extends Phaser.Scene {
     const treeColor = 0x1b3a1b; // Verde oscuro para los árboles
     const trunkColor = 0x8b4513; // Marrón para el tronco
     const treeStartX = trafficLightX + 100; // Los árboles comienzan después del semáforo
+    const trunkPalette = [0x8b5a2b]; 
     for (let i = treeStartX; i < roadWidth; i += 150) {
-      const treeX = i; // Posición horizontal del árbol
-      const treeY = SKY_HEIGHT - 40; // Posición vertical del árbol
+      const treeX = i;
+      const treeY = SKY_HEIGHT - 40;
 
-      // Tronco del árbol
-      graphics.fillStyle(trunkColor, 1);
-      graphics.fillRect(treeX, treeY, 20, 40);
+      const trunkHeight = Phaser.Math.Between(30, 55);
+      const trunkWidth = Phaser.Math.Between(14, 22);
+      const canopyRadius = Phaser.Math.Between(24, 38);
+      const canopyOffsetY = Phaser.Math.Between(18, 32);
+      const trunkColorVariant = trunkPalette[Phaser.Math.Between(0, trunkPalette.length - 1)];
 
-      // Copa del árbol
+      graphics.fillStyle(trunkColorVariant, 1);
+      graphics.fillRect(
+        treeX,
+        treeY - (trunkHeight - 40),
+        trunkWidth,
+        trunkHeight
+      );
+
       graphics.fillStyle(treeColor, 1);
-      graphics.fillCircle(treeX + 10, treeY - 20, 30);
+      graphics.fillCircle(
+        treeX + trunkWidth / 2,
+        treeY - trunkHeight + canopyOffsetY,
+        canopyRadius
+      );
     }
 
     // --- Fondo de la carretera ---
@@ -122,7 +151,91 @@ export default class RaceScene extends Phaser.Scene {
       roadWidth,
       roadHeightAdjusted,
       0x333333 // Gris oscuro para la carretera
+    );  
+
+    // --- Meta ---
+    this.finishLineX = roadWidth - 200;         
+    this.finishLineWidth = 36;                   
+    const finishLineHeight = roadHeightAdjusted - 56  ;    
+
+    const finishContainer = this.add.container(   
+      this.finishLineX,                          
+      roadYStart + finishLineHeight / 2          
     );
+    finishContainer.setDepth(5);                  
+
+    // postes
+    const postHeight = finishLineHeight + 150;    
+    const leftPost = this.add.rectangle(          
+      -this.finishLineWidth,
+      0,
+      12,
+      postHeight,
+      0x202225
+    );
+    const rightPost = this.add.rectangle(         
+      this.finishLineWidth,
+      0,
+      12,
+      postHeight,
+      0x202225
+    );
+    finishContainer.add([leftPost, rightPost]);  
+
+
+    const bannerOffsetY = -finishLineHeight / 2 - 80; 
+
+    const banner = this.add.rectangle(
+      0,
+      bannerOffsetY,
+      this.finishLineWidth * 4,
+      40,
+      0x1f2933
+    );
+    banner.setStrokeStyle(3, 0xf1f1f1);
+
+    const bannerText = this.add.text(
+      0,
+      bannerOffsetY,
+      "META",
+      {
+        fontSize: "28px",
+        fontStyle: "bold",
+        color: "#fafe00ff",
+        fontFamily: "Arial"
+      }
+    ).setOrigin(0.5);
+    finishContainer.add([banner, bannerText]);    
+
+    // patrón ajedrezado principal
+    const stripeHeight = this.finishLineWidth;
+    const columnOffsets = [
+      -this.finishLineWidth,
+      0,
+      this.finishLineWidth
+    ];
+
+    for (let y = -finishLineHeight / 2;
+         y < finishLineHeight / 2;
+         y += stripeHeight) {
+      const baseColor =
+        (Math.floor((y + finishLineHeight / 2) / stripeHeight) % 2 === 0)
+          ? 0xffffff
+          : 0x0a0a0a;
+      const middleColor = (baseColor === 0xffffff) ? 0x0a0a0a : 0xffffff;
+
+      columnOffsets.forEach((offset, index) => {
+        const color = index === 1 ? middleColor : baseColor;
+        const stripe = this.add.rectangle(
+          offset,
+          y + stripeHeight / 2,
+          this.finishLineWidth,
+          stripeHeight + 1,
+          color
+        );
+        finishContainer.add(stripe);
+      });
+    }
 
     // --- Bordes de la pista ---
     const borderHeight = 20;
@@ -135,6 +248,9 @@ export default class RaceScene extends Phaser.Scene {
       this.add.rectangle(i, roadYStart + roadHeightAdjusted - borderHeight, 40, borderHeight, color);
       this.add.rectangle(i, roadYStart, 40, borderHeight, color);
     }
+//--CREACION DE LA PISTA Y FONDO--
+
+
 
     // --- Texto combo del jugador local ---
     this.comboText = this.add.text(20, 20, "", { fontSize: "28px", color: "#ffffff" });
@@ -227,6 +343,7 @@ socket.emit("joinGame", { playerName, playerCar });
 
     // Crear contenedor para el carro, el nombre y el fondo del nombre
     const playerContainer = this.add.container(playerInfo.x, carY);
+    playerContainer.setDepth(10);                 // Carros por encima de la meta
 
     // Crear coche usando la imagen cargada en PreloadScene
     const car = this.add.image(0, 0, playerInfo.carKey)
@@ -336,13 +453,17 @@ socket.emit("joinGame", { playerName, playerCar });
 
   advanceCar() {
     const myCar = this.players[socket.id];
-    if (!myCar) return;
+    if (!myCar || this.gameEnded) return;
 
-    const distance = 100;
-    myCar.x += distance;
-
-    // Notificar backend
+    myCar.x += 100;
     socket.emit("playerMove", { x: myCar.x, y: myCar.y });
+
+    const bounds = myCar.getBounds();
+    if (bounds.right >= this.finishLineX) {
+      this.gameEnded = true;
+      socket.emit("winner");
+      this.showWinnerOverlay("¡Has cruzado la meta!", true);
+    }
   }
 
   update() {
