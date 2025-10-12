@@ -14,11 +14,11 @@ export default class RaceScene extends Phaser.Scene {
     this.combos = {};    // Combo actual de cada jugador
     //VALIDACION DE COMBOS
     this.comboCount = 0;
-    this.comboGoal = 3;
+    this.comboGoal = 15;
     this.gameEnded = false;
   }
 
-  create() {
+  create() {  
 
     const roadWidth = this.sys.game.config.width;
     const roadHeight = this.sys.game.config.height;
