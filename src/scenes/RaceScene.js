@@ -122,39 +122,39 @@ export default class RaceScene extends Phaser.Scene {
       roadWidth,
       roadHeightAdjusted,
       0x333333 // Gris oscuro para la carretera
-    );
+    );  
 
     // --- Meta ---
-    this.finishLineX = roadWidth - 200;           // Define la posición horizontal donde se dibujará la meta.
-    this.finishLineWidth = 36;                    // Guarda el ancho de cada columna de la meta.
-    const finishLineHeight = roadHeightAdjusted;  // Calcula la altura total que debe cubrir (toda la carretera).
+    this.finishLineX = roadWidth - 200;         
+    this.finishLineWidth = 36;                   
+    const finishLineHeight = roadHeightAdjusted;  
 
-    const finishContainer = this.add.container(   // Crea un contenedor para agrupar todos los elementos de la meta.
-      this.finishLineX,                           // Lo posiciona en la coordenada X de la meta.
-      roadYStart + finishLineHeight / 2           // Centra el contenedor respecto a la carretera.
+    const finishContainer = this.add.container(   
+      this.finishLineX,                          
+      roadYStart + finishLineHeight / 2          
     );
-    finishContainer.setDepth(5);                  // Meta por debajo
+    finishContainer.setDepth(5);                  
 
     // postes
-    const postHeight = finishLineHeight + 150;    // Da un poco más de altura a los postes para que sobresalgan.
-    const leftPost = this.add.rectangle(          // Crea el poste izquierdo.
+    const postHeight = finishLineHeight + 150;    
+    const leftPost = this.add.rectangle(          
       -this.finishLineWidth,
       0,
       12,
       postHeight,
       0x202225
     );
-    const rightPost = this.add.rectangle(         // Crea el poste derecho.
+    const rightPost = this.add.rectangle(         
       this.finishLineWidth,
       0,
       12,
       postHeight,
       0x202225
     );
-    finishContainer.add([leftPost, rightPost]);   // Añade ambos postes al contenedor.
+    finishContainer.add([leftPost, rightPost]);  
 
-    // banner superior
-    const bannerOffsetY = -finishLineHeight / 2 - 80; // antes -40
+
+    const bannerOffsetY = -finishLineHeight / 2 - 80; 
 
     const banner = this.add.rectangle(
       0,
@@ -172,11 +172,11 @@ export default class RaceScene extends Phaser.Scene {
       {
         fontSize: "28px",
         fontStyle: "bold",
-        color: "#f9f871",
+        color: "#fafe00ff",
         fontFamily: "Arial"
       }
     ).setOrigin(0.5);
-    finishContainer.add([banner, bannerText]);    // Inserta banner y texto en el contenedor.
+    finishContainer.add([banner, bannerText]);    
 
     // patrón ajedrezado principal
     const stripeHeight = this.finishLineWidth;
