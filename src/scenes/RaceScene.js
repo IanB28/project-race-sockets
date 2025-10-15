@@ -1,10 +1,10 @@
 import Phaser from "phaser";
 import socket from "../socket/connection.js";
-import { createCar } from "./CarFactory.js";
+
 
 const TRACK_HEIGHT = 100; // Altura de cada carril
 const SKY_HEIGHT = 350; // Altura del cielo
-const MAX_TRACKS = 5; // Número máximo de carriles
+const MAX_TRACKS = 6; // Número máximo de carriles
 
 export default class RaceScene extends Phaser.Scene {
   constructor() {
@@ -274,15 +274,14 @@ export default class RaceScene extends Phaser.Scene {
       this.connectedPlayers--;
     });
     socket.on("youWon", () => {
-      this.showWinnerOverlay("FELICIDADEEES, HAS GANADO LA CARRERA!", true);
-      this.gameEnded = true;
-    });
+  this.scene.start("WinnerScene", { winnerId: socket.id, isWinner: true });
+});
+
+
 
     socket.on("someOneWon", (data) => {
-      this.showWinnerOverlay(`Has perdido. \n Mejor Suerte para la próxima vez`, false);
-      this.gameEnded = true;
-    });
-
+  this.scene.start("WinnerScene", { winnerId: data.winnerId, isWinner: false });
+});
     // Unirse al juego
     const playerName = this.registry.get("playerName") || "Jugador";
 const playerCar = this.registry.get("playerCar") || "car1";
@@ -511,79 +510,105 @@ checkKeyPress(key) {
 }
 
 
-showWinnerOverlay(message, isWinner = false){
-    console.log("🎨 ENTRANDO A showWinnerOverlay:", message, "isWinner:", isWinner);
-    
-    const bgColor = isWinner ? 0x27ae60 : 0xe74c3c; // Verde y rojo xd
-    const borderColor = isWinner ? 0xffd700 : 0x95a5a6; //Dorado y gris
+showWinnerOverlay(message, isWinner = false) {
+  const width = this.scale.width;
+  const height = this.scale.height;
 
-    console.log("🎨 Colores calculados - bg:", bgColor, "border:", borderColor);
+  // Fondo oscuro para el mensaje
+  const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.8);
+  overlay.setDepth(100);
 
-    const overlay = this.add.rectangle(
-      this.sys.game.config.width / 2,
-      this.sys.game.config.height / 2,
-      this.sys.game.config.width,
-      this.sys.game.config.height,
-      0x000000,
-      0.7
-    );
-    overlay.setDepth(100);
-    console.log("🎨 Overlay creado");
+  // Contenedor para el mensaje
+  const container = this.add.container(width / 2, height / 2).setDepth(101);
 
-    const container = this.add.container(
-      this.sys.game.config.width / 2,
-      this.sys.game.config.height / 2
-    );
-    container.setDepth(101);
-    console.log("🎨 Container creado");
+  // Fondo del mensaje con bordes redondeados y degradado
+  const messageBg = this.add.graphics();
+  messageBg.fillGradientStyle(
+    isWinner ? 0x27ae60 : 0xe74c3c, // Verde para ganador, rojo para perdedor
+    isWinner ? 0x2ecc71 : 0xc0392b, // Tonos más claros
+    isWinner ? 0x27ae60 : 0xe74c3c,
+    isWinner ? 0x2ecc71 : 0xc0392b,
+    1
+  );
+  messageBg.fillRoundedRect(-300, -100, 600, 200, 20); // x, y, width, height, radius
+  messageBg.lineStyle(5, isWinner ? 0xffd700 : 0x95a5a6); // Dorado para ganador, gris para perdedor
+  messageBg.strokeRoundedRect(-300, -100, 600, 200, 20);
 
-    // CAMBIO: Usar Graphics en lugar de Rectangle con setStroke
-    const messageBg = this.add.graphics();
-    messageBg.fillStyle(bgColor);
-    messageBg.fillRect(-300, -100, 600, 200); // x, y, width, height (centrado)
-    messageBg.lineStyle(5, borderColor); // grosor, color
-    messageBg.strokeRect(-300, -100, 600, 200);
-    console.log("🎨 MessageBg creado con Graphics");
+  // Texto del mensaje
+  const winnerText = this.add.text(0, 0, message, {
+    fontSize: "32px",
+    fontFamily: "Orbitron, Arial Black",
+    color: "#ffffff",
+    align: "center",
+    wordWrap: { width: 500 },
+    shadow: { offsetX: 0, offsetY: 4, color: "#000", blur: 8, fill: true },
+  }).setOrigin(0.5);
 
-    const winnerText = this.add.text(0, 0, message, {
-      fontSize: "28px",
-      color: "#ffffff",
-      fontFamily: "Arial",
-      align: "center"
-    });
-    winnerText.setOrigin(0.5);
-    console.log("🎨 WinnerText creado");
+  container.add([messageBg, winnerText]);
 
-    container.add([messageBg, winnerText]);
-    console.log("🎨 Elementos agregados al container");
+  // Animación de entrada para el mensaje
+  container.setScale(0);
+  this.tweens.add({
+    targets: container,
+    scaleX: 1,
+    scaleY: 1,
+    duration: 800,
+    ease: "Bounce.easeOut",
+  });
 
-    //Animaciones de acuerdo al resultado
-    container.setScale(0);
-    console.log("🎨 Iniciando animación...");
+  // Icono personalizado (trofeo o carita triste)
+  const icon = this.add.image(0, -150, isWinner ? "trophy" : "sadFace").setScale(0.6).setDepth(102);
+  container.add(icon);
+
+  if (isWinner) {
+    // Animación de rebote para el trofeo
     this.tweens.add({
-      targets: container,
-      scaleX: 1,
-      scaleY: 1,
-      duration: isWinner ? 800 : 500,
-      ease: isWinner ? "Bounce.easeOut" : "Power2.easeOut",
-      onComplete: () => {
-        console.log("🎨 Animación completada!");
-      }
+      targets: icon,
+      y: -120,
+      duration: 800,
+      ease: "Bounce.easeOut",
+      yoyo: true,
+      repeat: -1,
     });
 
-    this.time.delayedCall(4000, () => {
-      console.log("🎨 Iniciando desvanecimiento...");
-      this.tweens.add({
-        targets: [overlay, container],
-        alpha: 0,
-        duration: 500,
-        onComplete: () => {
-          console.log("🎨 Elementos destruidos");
-          overlay.destroy();
-          container.destroy();
-        }
-      });
+    // Partículas para el ganador
+    const particles = this.add.particles("spark");
+    const emitter = particles.createEmitter({
+      x: width / 2,
+      y: height / 2,
+      speed: { min: 100, max: 200 },
+      scale: { start: 0.5, end: 0 },
+      blendMode: "ADD",
+      lifespan: 800,
+      frequency: 100,
     });
+
+    // Detener partículas después de 5 segundos
+    this.time.delayedCall(5000, () => emitter.stop());
+  } else {
+    // Animación de escala para la carita triste
+    this.tweens.add({
+      targets: icon,
+      scale: { from: 0.6, to: 0.7 },
+      duration: 500,
+      ease: "Sine.easeInOut",
+      yoyo: true,
+      repeat: -1,
+    });
+  }
+
+  // Desvanecimiento del mensaje
+  this.time.delayedCall(4000, () => {
+    this.tweens.add({
+      targets: [overlay, container],
+      alpha: 0,
+      duration: 500,
+      onComplete: () => {
+        overlay.destroy();
+        container.destroy();
+      },
+    });
+  });
 }   update() {
     // No mover libremente el carro
   }

@@ -6,21 +6,8 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   preload() {
-    // Fondo
-    /*this.load.image("background", "src/assets/background.png");
-
-    // Pista
-    this.load.image("track", "src/assets/track.png");
-
-    // Carros
-    this.load.image("car1", "src/assets/car1.png");
-    this.load.image("car2", "src/assets/car2.png");
-    this.load.image("car3", "src/assets/car3.png");
-      this.load.image("car4", "src/assets/car4.png");
-        this.load.image("car5", "src/assets/car5.png");*/
-
-
-        this.load.image("background", "img/background.png");
+    
+    this.load.image("background", "img/background.png");
 
     // Pista
     this.load.image("track", "img/track.png");
@@ -29,11 +16,17 @@ export default class PreloadScene extends Phaser.Scene {
     this.load.image("car1", "img/car1.png");
     this.load.image("car2", "img/car2.png");
     this.load.image("car3", "img/car3.png");
-      this.load.image("car4", "img/car4.png");
-        this.load.image("car5", "img/car5.png");
-       /* this.load.image("trophy", "src/assets/trophy.png");
-  this.load.image("sadFace", "src/assets/sadFace.png");
-  this.load.image("spark", "src/assets/spark.png");*/
+    this.load.image("car4", "img/car4.png");
+    this.load.image("car5", "img/car5.png");
+    this.load.image("car6", "img/car6.png");
+    this.load.image("car7", "img/car7.png");
+    this.load.image("car8", "img/car8.png");
+    this.load.image("car9", "img/car9.png");
+
+    this.load.image("trophy", "img/trophy.png");
+    
+  this.load.image("sadFace", "img/sadFace.png");
+  this.load.image("spark", "img/spark.png");
   }
 
   create() {

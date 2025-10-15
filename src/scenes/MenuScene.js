@@ -1,7 +1,7 @@
 export default class MenuScene extends Phaser.Scene {
   constructor() {
     super("MenuScene");
-    this.carKeys = ["car1", "car2", "car3","car4","car5"]; // Ajusta según tus assets
+    this.carKeys = ["car1", "car2", "car3","car4","car5","car6","car7","car8","car9"]; // Ajusta según tus assets
     this.selectedCar = 0;
     this.showCarSelectorModal = this.showCarSelectorModal.bind(this); // <-- Añade esto
   }
