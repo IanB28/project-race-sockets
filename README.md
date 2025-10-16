@@ -129,11 +129,3 @@ Este proyecto está bajo la licencia **MIT**. Puedes usarlo, modificarlo y distr
 - Mejorar la interfaz del modal de selección de coches.
 - Optimizar el rendimiento para dispositivos móviles.
 
----
-
-## 📞 Contacto
-
-Si tienes alguna pregunta o sugerencia, no dudes en contactarme:
-
-- **Correo:** tu-email@example.com
-- **GitHub:** [https://github.com/IanB28/project-race-sockets](https://github.com/IanB28/project-race-sockets)
