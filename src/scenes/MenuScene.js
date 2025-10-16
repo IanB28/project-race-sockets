@@ -1,11 +1,29 @@
+/**
+ * Escena del menú principal del juego.
+ * Permite al jugador ingresar su nombre, seleccionar un coche y comenzar la carrera.
+ * @extends Phaser.Scene
+ */
 export default class MenuScene extends Phaser.Scene {
+  /**
+   * Constructor de la escena MenuScene.
+   */
   constructor() {
     super("MenuScene");
-    this.carKeys = ["car1", "car2", "car3","car4","car5","car6","car7","car8","car9"]; // Ajusta según tus assets
+
+    /** @type {string[]} Lista de claves de los coches disponibles. */
+    this.carKeys = ["car1", "car2", "car3", "car4", "car5", "car6", "car7", "car8", "car9"];
+
+    /** @type {number} Índice del coche seleccionado. */
     this.selectedCar = 0;
-    this.showCarSelectorModal = this.showCarSelectorModal.bind(this); // <-- Añade esto
+
+    /** @type {Function} Método vinculado para mostrar el modal de selección de coche. */
+    this.showCarSelectorModal = this.showCarSelectorModal.bind(this);
   }
 
+  /**
+   * Método de Phaser que se ejecuta al crear la escena.
+   * Configura los elementos visuales y la lógica del menú.
+   */
   create() {
     const width = this.scale.width;
     const height = this.scale.height;
@@ -13,7 +31,7 @@ export default class MenuScene extends Phaser.Scene {
     // Fondo
     this.cameras.main.setBackgroundColor("#232526");
 
-    // Título mejorado y animado
+    // Título animado
     const racingTitle = this.add.text(width / 2, 80, "🏁 NEED MORE SPEED 🏁", {
       fontFamily: "Orbitron, Arial Black, Arial, sans-serif",
       fontSize: "64px",
@@ -22,10 +40,10 @@ export default class MenuScene extends Phaser.Scene {
       strokeThickness: 10,
       shadow: { offsetX: 0, offsetY: 10, color: "#000", blur: 24, fill: true },
       align: "center",
-      padding: { left: 16, right: 16, top: 8, bottom: 8 }
+      padding: { left: 16, right: 16, top: 8, bottom: 8 },
     }).setOrigin(0.5);
 
-    // Animación de escala y color
+    // Animación del título
     this.tweens.add({
       targets: racingTitle,
       scale: { from: 1, to: 1.08 },
@@ -40,10 +58,10 @@ export default class MenuScene extends Phaser.Scene {
       onRepeat: () => {
         racingTitle.setColor("#fff");
         racingTitle.setStroke("#FFD700", 10);
-      }
+      },
     });
 
-    // Input HTML para el nombre
+    // Input HTML para el nombre del jugador
     this.nameInput = document.createElement("input");
     this.nameInput.type = "text";
     this.nameInput.placeholder = "Ingresa tu nombre";
@@ -75,7 +93,7 @@ export default class MenuScene extends Phaser.Scene {
       shadow: { offsetX: 0, offsetY: 2, color: "#000", blur: 8, fill: true },
     }).setOrigin(0.5);
 
-    // Marco circular con sombra
+    // Marco circular para la vista previa del coche
     const miniX = width / 2;
     const miniY = height / 2 + 10;
     this.carMiniShadow = this.add.graphics();
@@ -88,13 +106,13 @@ export default class MenuScene extends Phaser.Scene {
     this.carMiniFrame.fillStyle(0x232526, 1);
     this.carMiniFrame.fillCircle(miniX, miniY, 54);
 
-    // Imagen del coche en miniatura, bien proporcionada
+    // Imagen del coche seleccionado
     this.carMini = this.add.image(miniX, miniY, this.carKeys[this.selectedCar])
       .setScale(0.14)
       .setDepth(2)
       .setAlpha(1);
 
-    // Nombre del coche debajo
+    // Nombre del coche seleccionado
     this.carLabel = this.add.text(miniX, miniY + 65, `Carro ${this.selectedCar + 1}`, {
       fontSize: "20px",
       color: "#FFD700",
@@ -129,7 +147,7 @@ export default class MenuScene extends Phaser.Scene {
 
     this.chooseBtn.onclick = () => this.showCarSelectorModal();
 
-    // Botón de comenzar
+    // Botón para comenzar la carrera
     const startBtn = this.add
       .text(width / 2, height / 2 + 200, "▶ Comenzar", {
         fontFamily: "Arial Black",
@@ -147,19 +165,7 @@ export default class MenuScene extends Phaser.Scene {
     startBtn.setTint(0x888888);
     startBtn.disableInteractive();
 
-    startBtn.on("pointerover", () => {
-      if (startBtn.input.enabled) {
-        startBtn.setStyle({ backgroundColor: "#00cec9", color: "#ffeaa7" });
-        this.tweens.add({ targets: startBtn, y: startBtn.y - 6, duration: 100, yoyo: true });
-      }
-    });
-    startBtn.on("pointerout", () => {
-      startBtn.setStyle({ backgroundColor: "#00b894", color: "#fff" });
-    });
     startBtn.on("pointerdown", () => {
-      if (this.sound.get("buttonClick")) {
-        this.sound.play("buttonClick", { volume: 0.5 });
-      }
       this.registry.set("playerName", this.nameInput.value);
       this.registry.set("playerCar", this.carKeys[this.selectedCar]);
       this.nameInput.remove();
@@ -168,18 +174,10 @@ export default class MenuScene extends Phaser.Scene {
       this.scene.start("RaceScene");
     });
 
-    // Actualiza el estado del botón según input y selección
+    // Actualiza el estado del botón según el input y la selección
     this.updateCarMini = () => {
       this.carMini.setTexture(this.carKeys[this.selectedCar]);
       this.carLabel.setText(`Carro ${this.selectedCar + 1}`);
-      this.tweens.add({
-        targets: this.carMini,
-        scale: { from: 0.11, to: 0.16 },
-        duration: 120,
-        yoyo: true,
-        onStart: () => this.carMini.setScale(0.11),
-        onComplete: () => this.carMini.setScale(0.14),
-      });
     };
     this.updateStartBtnState = () => {
       const hasName = this.nameInput.value.trim().length > 0;
@@ -195,16 +193,7 @@ export default class MenuScene extends Phaser.Scene {
     };
     this.nameInput.addEventListener("input", this.updateStartBtnState);
 
-    // Créditos
-    this.add
-      .text(width / 2, height - 48, "Hecho por AIA INC • 2025", {
-        fontSize: "18px",
-        color: "#bbb",
-        shadow: { offsetX: 0, offsetY: 2, color: "#000", blur: 8, fill: true },
-      })
-      .setOrigin(0.5);
-
-    // Limpieza
+    // Limpieza de elementos HTML al salir de la escena
     this.events.on("shutdown", () => {
       this.nameInput.remove();
       this.chooseBtn.remove();
@@ -217,6 +206,9 @@ export default class MenuScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Muestra el modal de selección de coche.
+   */
   showCarSelectorModal() {
     if (document.getElementById("car-modal")) document.getElementById("car-modal").remove();
 

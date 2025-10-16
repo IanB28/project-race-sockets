@@ -112,13 +112,28 @@ export default class WinnerScene extends Phaser.Scene {
      * Texto interactivo del botón.
      * @type {Phaser.GameObjects.Text}
      */
+        // Texto interactivo del botón.
+    // filepath: c:\Cursos\project-race-front\src\scenes\WinnerScene.js
     const restart = this.add.text(0, 130, "🔄 Volver al menú", {
       fontSize: "28px",
       fontFamily: "Orbitron, Arial Black",
       color: "#ffffff",
       align: "center",
     }).setOrigin(0.5).setInteractive();
-
+    
+    container.add(restart);
+    
+    // Evento para reiniciar y volver al menú
+    restart.on("pointerdown", () => {
+      this.scene.start("MenuScene"); // Cambia a MenuScene
+      window.location.reload(); // Recarga la página
+    });
+    
+    // Temporizador para regresar automáticamente al menú después de 8 segundos
+    this.time.delayedCall(5000, () => {
+      this.scene.start("MenuScene"); // Cambia a MenuScene
+      window.location.reload(); // Recarga la página
+    });
     container.add(restart);
 
     // Evento para reiniciar y volver al menú
